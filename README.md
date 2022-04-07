@@ -1,4 +1,4 @@
-## #monowheel
+## monowheel
 
 This is the scripts used to recreate a monowheel - this monowheel utilises a hybrid of constraints and legacy movers (only BodyGyro is used, the AlignOrientation constraint doesn't play nice with anything moving).
 
