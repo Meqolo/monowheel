@@ -3,17 +3,14 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Maid = require(ReplicatedStorage.Packages.Maid)
 
-local FORWARD_ANGULAR_VELOCITY = 30
-local REVERSE_ANGULAR_VELOCITY = -3
+local FORWARD_ANGULAR_VELOCITY = -30
+local REVERSE_ANGULAR_VELOCITY = 3
 local ACCELERATION = 6
 
 local MIN_ROTATION = -40
 local MAX_ROTATION = 40
-local ORIENTATION_OFFSET = 90
-
-local YAW_DIVIDER = 6
-local MIN_YAW = -30
-local MAX_YAW = 30
+local ROTATION_MULTIPLIER = 2
+local YAW_DIVIDER_GYRO = 50
 
 local MonowheelServer = {}
 MonowheelServer.__index = MonowheelServer
@@ -27,7 +24,7 @@ function MonowheelServer.new(model: Model)
 	self.actualSpeed = 0
 	self.steer = 0
 	self.orientation = 0
-	self.yawOrientation = 0
+	self.yawOrientation = 180
 
 	self:_detectEvents()
 	self:_heartbeat()
@@ -46,9 +43,24 @@ function MonowheelServer:_detectEvents()
 	self.maid:AddTask(self.seat:GetPropertyChangedSignal("Steer"):Connect(function()
 		self.steer = self.seat.Steer
 	end))
+
+	self.maid:AddTask(self.seat:GetPropertyChangedSignal("Occupant"):Connect(function()
+		if self.seat.Occupant then
+			local occupant = self.seat.Occupant.Parent:GetDescendants()
+			for _, part in pairs(occupant) do
+				if part:IsA("BasePart") then
+					part.Massless = true
+				end
+			end
+		end
+	end))
 end
 
 function MonowheelServer:_heartbeat()
+	self.maid:AddTask(RunService.Stepped:Connect(function()
+		self:_stayUpright()
+	end))
+
 	self.maid:AddTask(RunService.Heartbeat:Connect(function(dt)
 		--// Handle the vehicle speed
 		if self.desiredSpeed > self.actualSpeed then
@@ -62,22 +74,16 @@ function MonowheelServer:_heartbeat()
 		--// Handle the vehicle rotation
 		local actualVelocity = self.seat.AssemblyLinearVelocity.Magnitude
 
-		self.orientation += self.steer * dt * actualVelocity
-		self.yawOrientation += self.steer * dt * actualVelocity
+		self.orientation -= self.steer * dt * actualVelocity * ROTATION_MULTIPLIER
 		self.orientation = math.clamp(self.orientation, MIN_ROTATION, MAX_ROTATION)
-		self:_setRotation()
 	end))
 end
 
-function MonowheelServer:_setRotation()
-	self.seat.OrientationAttachment.Orientation = Vector3.new(0, 0, self.orientation + ORIENTATION_OFFSET)
-	if self.seat.AssemblyLinearVelocity.Magnitude > 5 then
-		self.model.WheelHinge.HingeConstraint.TargetAngle = math.clamp(
-			self.orientation / (self.seat.AssemblyLinearVelocity.Magnitude / YAW_DIVIDER),
-			MIN_YAW,
-			MAX_YAW
-		)
-	end
+function MonowheelServer:_stayUpright()
+	self.yawOrientation += self.orientation / YAW_DIVIDER_GYRO
+
+	self.seat.BodyGyro.CFrame = CFrame.new(self.seat.CFrame.Position)
+		* CFrame.Angles(0, math.rad(self.yawOrientation), math.rad(self.orientation))
 end
 
 function MonowheelServer:_setMotorSpeeds()

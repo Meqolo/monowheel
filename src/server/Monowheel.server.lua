@@ -3,4 +3,6 @@ local ServerScriptService = game:GetService("ServerScriptService")
 
 local Monowheel = require(ServerScriptService.MonowheelModule)
 
-Monowheel.new(Workspace.Monowheel)
+for _, vehicle in pairs(Workspace.Monowheels:GetChildren()) do
+	Monowheel.new(vehicle)
+end
