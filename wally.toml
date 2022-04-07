@@ -1,0 +1,17 @@
+[package]
+name = "theeq/pogo-test"
+version = "0.1.0"
+registry = "https://github.com/UpliftGames/wally-index"
+realm = "shared"
+
+[dependencies]
+Promises = "evaera/promise@*"
+Maid = "finobinos/maid@*"
+Flipper = "reselim/flipper@*"
+llama = "shanebutt/llama@*"
+Enums = "sleitnick/enum-list@*"
+
+Roact = "roblox/roact@*"
+Rodux = "roblox/rodux@*"
+Roact-Rodux = "roblox/roact-rodux@*"
+pid = "sleitnick/pid@1.0.1"
